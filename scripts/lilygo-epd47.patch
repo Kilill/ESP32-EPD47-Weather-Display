@@ -1,0 +1,167 @@
+diff --git a/src/epd_driver.c b/src/epd_driver.c
+index 70a3ad6..f750a10 100644
+--- a/src/epd_driver.c
++++ b/src/epd_driver.c
+@@ -240,6 +240,108 @@ void epd_clear_area_cycles(Rect_t area, int32_t cycles, int32_t cycle_time)
+ }
+ 
+ 
++void epd_push_pixels_circle(int32_t x0, int32_t y0, int32_t r, int16_t time, int32_t color)
++{
++    uint8_t row[EPD_LINE_BYTES] = { 0 };
++
++    // Calculate bounding box for the circle
++    int32_t y_start = y0 - r;
++    int32_t y_end = y0 + r;
++    
++    if (y_start < 0) y_start = 0;
++    if (y_end >= EPD_HEIGHT) y_end = EPD_HEIGHT - 1;
++
++    epd_start_frame();
++
++    for (int32_t y = 0; y < EPD_HEIGHT; y++)
++    {
++        // Clear row buffer
++        memset(row, 0, EPD_LINE_BYTES);
++        
++        // Check if this row intersects the circle
++        if (y >= y_start && y <= y_end)
++        {
++            // Calculate x range for this y using circle equation: x^2 + y^2 = r^2
++            int32_t dy = y - y0;
++            int32_t dx = (int32_t)sqrt(r * r - dy * dy);
++            
++            int32_t x_start = x0 - dx;
++            int32_t x_end = x0 + dx;
++            
++            if (x_start < 0) x_start = 0;
++            if (x_end >= EPD_WIDTH) x_end = EPD_WIDTH - 1;
++            
++            // Fill the row buffer for this circle segment
++            for (int32_t x = x_start; x <= x_end; x++)
++            {
++                uint32_t position = x % 4;
++                uint8_t mask = (color ? CLEAR_BYTE : DARK_BYTE) & (0b00000011 << (2 * position));
++                row[x / 4] |= mask;
++            }
++            
++            reorder_line_buffer((uint32_t *)row);
++            
++            epd_switch_buffer();
++            memcpy(epd_get_current_buffer(), row, EPD_LINE_BYTES);
++            epd_switch_buffer();
++            memcpy(epd_get_current_buffer(), row, EPD_LINE_BYTES);
++
++            write_row(time * 10);
++        }
++        else if (y < y_start)
++        {
++            skip_row(time);
++        }
++        else if (y == y_start)
++        {
++            // First row of circle area - setup buffers
++            reorder_line_buffer((uint32_t *)row);
++            
++            epd_switch_buffer();
++            memcpy(epd_get_current_buffer(), row, EPD_LINE_BYTES);
++            epd_switch_buffer();
++            memcpy(epd_get_current_buffer(), row, EPD_LINE_BYTES);
++
++            write_row(time * 10);
++        }
++        else
++        {
++            skip_row(time);
++        }
++    }
++    
++    // Latch out the last row
++    write_row(time * 10);
++
++    epd_end_frame();
++}
++
++
++void epd_clear_circle_cycles(int32_t x0, int32_t y0, int32_t r, int32_t cycles, int32_t cycle_time)
++{
++    const int16_t white_time = cycle_time;
++    const int16_t dark_time = cycle_time;
++
++    for (int32_t c = 0; c < cycles; c++)
++    {
++        for (int32_t i = 0; i < 4; i++)
++        {
++            epd_push_pixels_circle(x0, y0, r, dark_time, 0);
++        }
++        for (int32_t i = 0; i < 4; i++)
++        {
++            epd_push_pixels_circle(x0, y0, r, white_time, 1);
++        }
++    }
++}
++
++
++void epd_clear_circle(int32_t x0, int32_t y0, int32_t r)
++{
++    epd_clear_circle_cycles(x0, y0, r, 4, 50);
++}
++
++
+ Rect_t epd_full_screen()
+ {
+     Rect_t area = {.x = 0, .y = 0, .width = EPD_WIDTH, .height = EPD_HEIGHT};
+diff --git a/src/epd_driver.h b/src/epd_driver.h
+index 791dcd1..791ad0e 100644
+--- a/src/epd_driver.h
++++ b/src/epd_driver.h
+@@ -131,6 +131,37 @@ void epd_clear_area_cycles(Rect_t area, int32_t cycles, int32_t cycle_time);
+  */
+ void epd_push_pixels(Rect_t area, int16_t time, int32_t color);
+ 
++/**
++ * @brief Darken / lighten a circular area for a given time.
++ *
++ * @param x0    Center X coordinate of the circle.
++ * @param y0    Center Y coordinate of the circle.
++ * @param r     Radius of the circle in pixels.
++ * @param time  The time in us to apply voltage to each pixel.
++ * @param color 1: lighten, 0: darken.
++ */
++void epd_push_pixels_circle(int32_t x0, int32_t y0, int32_t r, int16_t time, int32_t color);
++
++/**
++ * @brief Clear a circular area by flashing it.
++ *
++ * @param x0         Center X coordinate of the circle.
++ * @param y0         Center Y coordinate of the circle.
++ * @param r          Radius of the circle in pixels.
++ * @param cycles     The number of black-to-white clear cycles.
++ * @param cycle_time Length of a cycle. Default: 50 (us).
++ */
++void epd_clear_circle_cycles(int32_t x0, int32_t y0, int32_t r, int32_t cycles, int32_t cycle_time);
++
++/**
++ * @brief Clear a circular area with default parameters.
++ *
++ * @param x0 Center X coordinate of the circle.
++ * @param y0 Center Y coordinate of the circle.
++ * @param r  Radius of the circle in pixels.
++ */
++void epd_clear_circle(int32_t x0, int32_t y0, int32_t r);
++
+ /**
+  * @brief Draw a picture to a given area. The image area is not cleared and
+  *        assumed to be white before drawing.
+diff --git a/src/i2s_data_bus.c b/src/i2s_data_bus.c
+index c68d8b5..4787742 100644
+--- a/src/i2s_data_bus.c
++++ b/src/i2s_data_bus.c
+@@ -369,6 +369,7 @@ void i2s_bus_init(i2s_bus_config *cfg)
+     ESP_LOGI(TAG, "Initialize Intel 8080 bus");
+     esp_lcd_i80_bus_handle_t i80_bus = NULL;
+     esp_lcd_i80_bus_config_t bus_config = {
++        .clk_src = LCD_CLK_SRC_PLL160M,
+         .dc_gpio_num = cfg->start_pulse,
+         .wr_gpio_num = cfg->clock,
+         .data_gpio_nums = {

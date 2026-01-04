@@ -1,0 +1,22 @@
+# LVGL Component Placeholder
+# 
+# This directory should contain the LVGL graphics library
+# 
+# To add LVGL to your project:
+# 1. Clone LVGL into this directory:
+#    cd components
+#    git clone https://github.com/lvgl/lvgl.git
+# 
+# 2. Create a CMakeLists.txt in components/lvgl/ with:
+#    idf_component_register(
+#        SRCS <lvgl_source_files>
+#        INCLUDE_DIRS "." "src"
+#        REQUIRES driver esp_timer
+#    )
+# 
+# OR use ESP-IDF component manager:
+# Add to your main/idf_component.yml:
+#   dependencies:
+#     lvgl/lvgl: "^8.3.0"
+
+README_LVGL.txt

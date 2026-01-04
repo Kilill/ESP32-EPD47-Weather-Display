@@ -1,0 +1,33 @@
+idf_component_register(
+    SRCS 
+        "main.cpp"
+        "wifi_manager.c"
+        "mqtt_handler.c"
+        "http_client.c"
+        "../gui/WeatherUI.cpp"
+        "../gui/WeatherData.cpp"
+        "../gui/Windrose.cpp"
+        "../gui/Thermometer.cpp"
+        "../gui/WindData.cpp"
+        "../gui/Status.cpp"
+        "../gui/Chart.cpp"
+        "../gui/WindSpeedChart.cpp"
+        "../gui/TemperatureChart.cpp"
+        "../gui/PressureChart.cpp"
+    INCLUDE_DIRS 
+        "."
+        "../gui"
+    REQUIRES 
+        nvs_flash
+        esp_wifi
+        esp_event
+        esp_http_client
+        mqtt
+        driver
+        esp_driver_spi
+        esp_driver_gpio
+        esp_timer
+        esp_adc
+        cjson
+        lilygo-epd47
+)

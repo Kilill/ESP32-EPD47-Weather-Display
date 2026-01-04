@@ -1,0 +1,6 @@
+[submodule "components/epdiy"]
+	path = components/epdiy
+	url = https://github.com/vroland/epdiy.git
+[submodule "components/lilygo-epd47"]
+	path = components/lilygo-epd47
+	url = https://github.com/Xinyuan-LilyGO/LilyGo-EPD47.git

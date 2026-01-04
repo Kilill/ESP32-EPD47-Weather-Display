@@ -1,0 +1,14 @@
+.vscode/
+build/
+sdkconfig
+sdkconfig.old
+dependencies.lock
+managed_components/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Sensitive configuration files
+main/secrets.h
+weatherAPI/config.php

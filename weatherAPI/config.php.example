@@ -1,0 +1,32 @@
+<?php
+/**
+ * Weather API Database Configuration Template
+ * 
+ * SETUP INSTRUCTIONS:
+ * 1. Copy this file to config.php:
+ *    cp config.php.example config.php
+ * 
+ * 2. Edit config.php with your actual database credentials
+ * 
+ * 3. Never commit config.php to version control (it's in .gitignore)
+ */
+
+// TimescaleDB/PostgreSQL Database Configuration
+define('DB_HOST', 'localhost');
+define('DB_PORT', '5432');
+define('DB_NAME', 'weather_db');
+define('DB_USER', 'weather_user');
+define('DB_PASSWORD', 'your_password_here');
+
+// API Configuration
+define('API_TIMEZONE', 'Europe/Oslo');  // Adjust to your timezone
+
+// Default number of days to retrieve if not specified
+define('DEFAULT_DAYS', 7);
+
+// Maximum number of days that can be requested
+define('MAX_DAYS', 30);
+
+// Enable/disable debug mode (never enable in production)
+define('DEBUG_MODE', false);
+?>
